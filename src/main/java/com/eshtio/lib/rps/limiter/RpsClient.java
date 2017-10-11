@@ -46,17 +46,17 @@ public class RpsClient {
 
         @Override
         public void run() {
-
             requestCount = 0;
             requestCountDuration = System.currentTimeMillis();
-
             while (!isInterrupted()) {
                 String message = takeMessage();
 
                 if (requestCount >= rps) {
-                    // Если количество обработанных сообщений уже превысило rps
-                    // и времени с момента последнего обнуления счетчиков прошло больше секунды
+                    // Если количество обработанных сообщений уже превысило допустимую норму,
+                    // а времени с момента последнего обнуления счетчиков прошло меньше секунды
+                    // (т.е. если мы превышаем значение request per second)
                     if (System.currentTimeMillis() - requestCountDuration < ONE_SECOND_MILLS) {
+                        // считаем, сколько нам нужно подождать до новой секунды, чтобы отправить запрос
                         long duration = System.currentTimeMillis() - requestCountDuration;
                         System.out.println("Sleep " + (ONE_SECOND_MILLS - duration) + " ms");
                         sleepWithoutException(ONE_SECOND_MILLS - duration);
