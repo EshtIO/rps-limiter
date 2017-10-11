@@ -6,17 +6,28 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class RpsClient {
 
+    // Сообщение - маркер для передачи в очередь, чтобы фоновый поток понял, что больше сообщений нет,
+    // Добавил для удобства остановки приложения, чтобы приложение завершалось само
+    private static final String STOP_MESSAGE = new Object().toString();
+
     private static final long ONE_SECOND_MILLS = 1000;
 
     private final int rps;
     private final BlockingQueue<String> messages;
+    private final MessageConsumer messageConsumer;
 
     public RpsClient(int rps) {
         this.rps = rps;
         this.messages = new ArrayBlockingQueue<>(rps, true);
+        messageConsumer = new MessageConsumer();
+    }
 
-        MessageConsumer messageConsumer = new MessageConsumer();
+    public void startConsumer() {
         messageConsumer.start();
+    }
+
+    public void waitConsumer() {
+        putMessage(STOP_MESSAGE);
     }
 
     public void sendMessage(String message) {
@@ -50,6 +61,13 @@ public class RpsClient {
             requestCountDuration = System.currentTimeMillis();
             while (!isInterrupted()) {
                 String message = takeMessage();
+
+                // Хак для завершения фонового потока
+                // Нарочно сравниваю не equals,
+                // т.к. предполагается в качестве стоп-слова получить конкретный объект
+                if (STOP_MESSAGE == message) {
+                    return;
+                }
 
                 if (requestCount >= rps) {
                     // Если количество обработанных сообщений уже превысило допустимую норму,
@@ -85,9 +103,6 @@ public class RpsClient {
             sleepWithoutException(ThreadLocalRandom.current().nextLong(500));
             System.out.println("Send message: " + message);
         }
-
-
     }
-
 
 }
