@@ -4,10 +4,16 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ThreadLocalRandom;
 
+/**
+ * Реализация - прототип.
+ * TODO: В плане чистоты кода косяков много - понятно, интересует корректность самого подхода
+ */
 public class RpsClient {
 
     // Сообщение - маркер для передачи в очередь, чтобы фоновый поток понял, что больше сообщений нет,
-    // Добавил для удобства остановки приложения, чтобы приложение завершалось само
+    // Добавил для удобства остановки приложения, чтобы приложение завершалось корректно,
+    // только всех сообщений уже внутри очереди,
+    // а так же после обработки всех повисших сообщений (ожидающих попасть в очередь)
     private static final String STOP_MESSAGE = new Object().toString();
 
     /**
@@ -29,7 +35,9 @@ public class RpsClient {
         messageConsumer.start();
     }
 
-    public void waitConsumer() {
+    public void waitStopConsumer() {
+        // Для ожидания остановки добавляем стоп-слово,
+        // как-только до него дойдет очередь, consumer (его поток) завершит свою работу
         putMessage(STOP_MESSAGE);
     }
 
@@ -76,10 +84,11 @@ public class RpsClient {
             while (!isInterrupted()) {
                 String message = takeMessage();
 
-                // Хак для завершения фонового потока
-                // Нарочно сравниваю не equals,
-                // т.к. предполагается в качестве стоп-слова получить конкретный объект
-                if (STOP_MESSAGE == message) {
+                // Если в очередь добавили стоп-слово, то прекращаем обработку.
+                // В общем добавил пока только для удобства запуска и остановки main-потока
+                // (чтобы main-поток не висел в вечном ожидании новых сообщений и
+                // в тоже время успешно обработал все добавленные в очередь сообщения)
+                if (STOP_MESSAGE.equals(message)) {
                     return;
                 }
 

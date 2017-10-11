@@ -8,7 +8,7 @@ public class Main {
         for (int i = 0; i < 100; i++) {
             rpsClient.sendMessage("Message_" + i);
         }
-        rpsClient.waitConsumer();
+        rpsClient.waitStopConsumer();
     }
 
 
